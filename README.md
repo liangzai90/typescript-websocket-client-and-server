@@ -1,6 +1,8 @@
 # typescript websocket-client and websocket-server.
 	用TypeScript写的一个服务端和客户端。
-	可以实现客户端的登陆、注册功能。服务器连接的是Mongoodb。
+	可以实现客户端的登陆、注册功能。
+	服务器连接的是Mongoodb。
+	用的websocket通信方式。
 	
 下载了工程之后，先运行 npm install ，把相关依赖的包安装好。
 
