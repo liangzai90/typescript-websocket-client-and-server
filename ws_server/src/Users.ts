@@ -10,197 +10,137 @@ import * as MyUtil from './Util'
 import {MongoDBManager} from './MongoDBManager'
 
 
-//定义Users类
-export class  Users  implements NetMessageType.USER_INFO
-{       
+/** 定义Users类 */
+export class  Users{       
     //============================ user data =============================
-    loginSuccess:boolean;
-    username ="unkonwn Name";
-    password ="unkonwn Pwd";
+    private loginSuccess:boolean;
+    /**保存玩家信息 */
+    private userInfo:NetMessageType.MSG_S2C_RSP_1 = <NetMessageType.MSG_S2C_RSP_1>{};
 
-//uname:string;////最好是在构造函数里面就设置好玩家的信息...
-    constructor(public ws:WebSocket, public mongodb:MongoDBManager)
-    {
-        this.loginSuccess=false;
-        MyUtil.outputDebugInfo("Users", "constructor","create a new users");
+    /**返回玩家信息 */
+    public getUserInfo(){
+        return this.userInfo;
+    }
+    constructor(public ws:WebSocket, userInfo: NetMessageType.MSG_S2C_RSP_1){
+        this.userInfo.username = userInfo.username;
+        this.userInfo.userid = userInfo.userid;
+        this.userInfo.code = userInfo.code;
+        this.userInfo.des = userInfo.des;
+        this.loginSuccess=true;
+        MyUtil.outputDebugInfo("Users", "constructor", `create a new users: username:${this.userInfo.username},userID:${this.userInfo.userid}`);
+        this.init();
     };
 
+    /** 初始化Users类，并绑定消息路由 */
+    init() {
+         this.ws.on('message', this.handleIncoming);       
+    }
 
 
     //============================= handle message =============================
-    //接收数据
-    handleIncoming(recvData: WebSocket.Data)
-    {
+    /** 消息入口，服务器 接收并处理 客户端发来的消息.根据主消息号、子消息号去判断具体消息   */
+    handleIncoming = (recvData: WebSocket.Data) => {
         MyUtil.outputDebugInfo("Users", "handleIncoming","One User [handleIncoming] message");
 
         ///1.json 字符串转为 obj
         let objData1:NetMessageType.MSG_TYPE = JSON.parse(<string>recvData);  ///强制类型转换<string>
         console.log("c2s:" + objData1);
-        ///2.judge the msgID.
-        if(NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER == objData1.msgMainID)
-        {
-             ///处理玩家的 注册请求 信息
-            if(NetMessageID.MESSAGE_SUB_ID.REGISTER == objData1.msgSubID)
-            {
-                let objData2:NetMessageType.MSG_REGISTER = JSON.parse(<string>objData1.msgData);
-                if(0 != Object.keys(objData2).length)
-                {                   
-                    MyUtil.outputDebugInfo("Users", "handleIncoming","handle user Register request");         
-                    
-                    //TODO:这里必须用箭头函数写，否则this变化，找不到回调函数了
-                    this.mongodb.userRegister(objData2, this.registerCallback);
-                }
-                else
-                {
-                    MyUtil.outputDebugInfo("Users","handleInComing", "invalid data..1");
-                }
+        
+        //client say hello to server. server say hello to client.
+        if(NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER == objData1.msgMainID){
+            if(NetMessageID.MESSAGE_SUB_ID.SAY_HELLO == objData1.msgSubID){
+                this.handleClientSayHello(<string>objData1.msgData);
             }
-            ///处理玩家的 登陆请求 信息
-            else if(NetMessageID.MESSAGE_SUB_ID.LOGIN == objData1.msgSubID)
-            {
-                let objData2:NetMessageType.MSG_LOGIN = JSON.parse(<string>objData1.msgData);
-                if(0 != Object.keys(objData2).length)
-                {                    
-                    MyUtil.outputDebugInfo("Users", "handleIncoming","handle user Login request");                
-                    this.mongodb.userLogin(objData2, this.loginCallback);
-                }
-                else
-                {
-                    MyUtil.outputDebugInfo("Users","handleInComing", "invalid data..2");
-                }
-            }
-            //处理玩家的 退出请求 信息
             else if(NetMessageID.MESSAGE_SUB_ID.LOGOUT == objData1.msgSubID)
             {
-                let objData2:NetMessageType.MSG_LOGOUT = JSON.parse(<string>objData1.msgData);
-                if(0 != Object.keys(objData2).length)
-                {
-                    MyUtil.outputDebugInfo("Users", "handleIncoming","handle user Logout request");
-                    this.mongodb.userLogout(objData2, this.logoutCallback);
-                }
-                else
-                {
-                    MyUtil.outputDebugInfo("Users","handleInComing", "invalid data..3");
-                }
-
+                this.handleClientLogout(<string>objData1.msgData);
             }
-            else 
-            {
-                MyUtil.outputErrorInfo("Users", "handleIncoming","some unkonwn error..1");
-            }
-        }
-        else
-        {
-            MyUtil.outputErrorInfo("Users", "handleIncoming","some unkonwn error..2");
         }
     }
 
-    handleError(error: Error)
-    {
+    /**处理 socket的error */
+    handleError = (error: Error) => {
         MyUtil.outputDebugInfo("Users", "handleError","handle error");
     }
 
-    handleClose(code: number, reason: string)
-    {
+    /**处理 客户端断开连接 */
+    handleClose(code: number, reason: string) {
         MyUtil.outputDebugInfo("Users", "handleClose","handle close");
 
     }
 
 
-    //============================= callback function =============================
-    //code: 0 ok, 1:error
-    //reason: description the error. or other . 
-    registerCallback = (code: number, reason?: string)=>{
-        MyUtil.outputDebugInfo("Users", "registerCallback"," register");
-        if(NetMessageID.ERROR_CODE.IS_OK == code)
-        {
-            this.registerRsp(code,reason);
-        }
-        else
-        {
-            this.sendErrorCode(code,reason);
-        }
-    };
+    //========================= S2C Message ================================
+    /**处理客户端的 hello 消息 */
+    handleClientSayHello(msgStr:string){
 
-    loginCallback = (code: number, reason?: string) => {
-        MyUtil.outputDebugInfo("Users", "loginCallback"," login");
-        if(NetMessageID.ERROR_CODE.IS_OK == code)
-        {
-            this.loginRsp(code,reason);
-        }
-        else
-        {
-            this.sendErrorCode(code,reason);
-        }
-    };
+        /**服务器解析客户的消息内容 */
+        let recvData1 = <NetMessageType.MSG_SAY_HELLO>{};
+        let objData1 =  JSON.parse(msgStr);
+        recvData1.username =objData1.username;
+        recvData1.des =objData1.des;
 
-    logoutCallback = (code: number, reason?: string)=>{
-        MyUtil.outputDebugInfo("Users", "logoutCallback"," logout");
-        this.logoutRsp(code, reason);
-    };
+        MyUtil.outputDebugInfo("Users", "handleClientSayHello",`Server receive client [${recvData1.username}] ,message:${recvData1.des}.`);
+        MyUtil.outputDebugInfo("Users", "handleClientSayHello","Server say Hello to client too...");
 
-
-    //============================= other =============================
-    registerRsp(state:number, reason?: string)
-    {
-        MyUtil.outputDebugInfo("Users", "registerRsp"," success.");
+        /**发一条测试消息给客户端 */
         let tempSendMsg = <NetMessageType.MSG_TYPE>{};
         tempSendMsg.msgTimeStamp = new Date();
         tempSendMsg.msgLength = 1;
         tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-        tempSendMsg.msgSubID =NetMessageID.MESSAGE_SUB_ID.REGISTER;
+        tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.SAY_HELLO;
 
-        let tempDataSend2 = <NetMessageType.MSG_S2C_RSP_1>{
-            "code":NetMessageID.ERROR_CODE.IS_OK ,
-            "des":reason
-        };
+        let tempDataSend2 = <NetMessageType.MSG_SAY_HELLO>{
+            username:"I am Server.",
+            des:"Server say hello to client."
+        };        
         tempSendMsg.msgData = JSON.stringify(tempDataSend2);
-
         this.ws.send(JSON.stringify(tempSendMsg));
     }
 
-    loginRsp(state:number, reason?: string)
-    {
-        MyUtil.outputDebugInfo("Users", "loginRsp"," success.");
+    /**处理客户端的退出消息 */
+    async handleClientLogout(msgStr:string){
+
+        /**服务器解析客户的消息内容 */
+        let recvData1 = <NetMessageType.MSG_S2C_RSP_1>{};
+        let objData1 =  JSON.parse(msgStr);
+        // userInfo
+        recvData1.username =this.userInfo.username;
+        recvData1.userid =this.userInfo.userid;
+        recvData1.des =objData1.des;
+
+        MyUtil.outputDebugInfo("Users", "handleClientLogout",`Server receive client [${recvData1.username}] ,message:${recvData1.des}.`);
+        MyUtil.outputDebugInfo("Users", "handleClientLogout","client logout");
+
+        
+        let rerValue = await MongoDBManager.userLogout(recvData1);
+
+        
+        /**发一条测试消息给客户端 */
         let tempSendMsg = <NetMessageType.MSG_TYPE>{};
         tempSendMsg.msgTimeStamp = new Date();
         tempSendMsg.msgLength = 1;
         tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-        tempSendMsg.msgSubID =NetMessageID.MESSAGE_SUB_ID.LOGIN;
+        tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.LOGOUT;
 
         let tempDataSend2 = <NetMessageType.MSG_S2C_RSP_1>{
-            "code":NetMessageID.ERROR_CODE.IS_OK ,
-            "des":reason
-        };
+            username:this.userInfo.username,
+            userid:this.userInfo.userid,
+            code:NetMessageID.ERROR_CODE.IS_OK,
+            des:"成功退出"
+        };        
+
         tempSendMsg.msgData = JSON.stringify(tempDataSend2);
-
-
         this.ws.send(JSON.stringify(tempSendMsg));
+
+//        this.ws.close(10086,"客户端退出，服务器主动断开客户端socket");
+        this.ws.terminate();
+        return "handleClientLogout";
     }
 
 
-    logoutRsp(state:number, reason?: string)
-    {
-        MyUtil.outputDebugInfo("Users", "logoutRsp"," success or failed.");
-        let tempSendMsg = <NetMessageType.MSG_TYPE>{};
-        tempSendMsg.msgTimeStamp = new Date();
-        tempSendMsg.msgLength = 1;
-        tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-        tempSendMsg.msgSubID =NetMessageID.MESSAGE_SUB_ID.LOGOUT;
-
-        let tempDataSend2 = <NetMessageType.MSG_S2C_RSP_1>{
-            "code":NetMessageID.ERROR_CODE.IS_OK ,
-            "des":reason
-        };
-        tempSendMsg.msgData = JSON.stringify(tempDataSend2);
-
-
-        this.ws.send(JSON.stringify(tempSendMsg));
-    }
-    
-    // send error code to client
-    sendErrorCode(code:number, reason ?: string)
-    {
+    /** send error code to client */
+    sendErrorCode(code:number, reason ?: string){
         console.log("error code: " + code);
         let tempSendMsg = <NetMessageType.MSG_TYPE>{};
         tempSendMsg.msgTimeStamp = new Date();
@@ -212,12 +152,10 @@ export class  Users  implements NetMessageType.USER_INFO
             "des":"unknown"
         };        
 
-        if(reason)
-        {
+        if(reason){
             tempDataSend2.des = reason;
         }
-        else 
-        {
+        else {
             tempDataSend2.des = "unknown";
         }
 
@@ -226,6 +164,5 @@ export class  Users  implements NetMessageType.USER_INFO
         this.ws.send(JSON.stringify(tempSendMsg));
         MyUtil.outputErrorInfo("User.ts", "sendErrorCode", JSON.stringify(tempSendMsg));
     }
-
 }
 

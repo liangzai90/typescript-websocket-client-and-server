@@ -15,8 +15,25 @@ var MyUtil = __importStar(require("./Util"));
 ////client ask server
 var ws_1 = __importDefault(require("ws"));
 MyUtil.outputDebugInfo("app.ts", "this is clientApp.", "---------------->>>>start");
-var listenPort = 3006;
-var ws_cient = new ws_1.default("ws://127.0.0.1:" + listenPort);
+var listenPort = 3006; // origin 
+//const ws_cient = new WebSocket(`ws://127.0.0.1:${listenPort}`);
+/**模拟一个客户端数据 */
+var OneUser = {
+    username: "henry09",
+    password: "123456",
+    act: 2 //1：注册，2:登录，3：退出*/
+};
+var url = "ws://127.0.0.1:3006/";
+var params = "?username=" + OneUser.username + "&password=" + OneUser.password + "&act=" + OneUser.act;
+/** username:用户名*/
+/**password:用户密码*/
+/**act：用户行为.0:默认值（服务器不做任何处理，客户端会连不上） 1：注册，2:登录，3：退出*/
+//const ws_cient = new WebSocket("?username=henry&password=12345&act=1");
+/** 客户端通过带参数的url请求服务器*/
+var ws_cient = new ws_1.default(url + params);
+//ws://127.0.0.1:3006/path?token=abc
+//constructor(address: string | url.URL, options?: WebSocket.ClientOptions | http.ClientRequestArgs);
+// constructor(address: string | url.URL, protocols?: string | string[], options?: WebSocket.ClientOptions | http.ClientRequestArgs);
 // onerror: (event: WebSocket.ErrorEvent) => void;
 // interface ErrorEvent {
 //     error: any;
@@ -40,10 +57,9 @@ ws_cient.onopen = function (event) {
 //====================== S2C message ======================
 ws_cient.onmessage = function (event) {
     console.log("ws.onmessage----->>>服务器发来消息：");
+    console.log(event.data);
     //1.解析服务器发来的消息
     var objData1 = JSON.parse(event.data); ///强制类型转换<string>
-    console.log("objData1:");
-    console.dir(objData1);
     //2.根据 msgMainID，msgSubID，来处理不同消息
     if (NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER == objData1.msgMainID) {
         //handle login,register,logout response message...
@@ -53,44 +69,47 @@ ws_cient.onmessage = function (event) {
             //TODO:3.msgData是空{}
             //TODO:4.msgData从json解析出来的object，没有我们需要的 字段名
             var objData2 = JSON.parse(objData1.msgData);
+            console.error("username:" + objData2.username + ",userid:" + objData2.userid + ",code:" + objData2.code + ",des:" + objData2.des);
             if (0 != Object.keys(objData2).length) {
                 if (NetMessageID.ERROR_CODE.IS_OK == objData2.code) {
-                    MyUtil.outputDebugInfo("clientApp.ts", "REGISTER", "" + objData2.code);
+                    MyUtil.outputDebugInfo("clientApp.ts", "onmessage-REGISTER", "\u6CE8\u518C\u6210\u529F\u3002code:" + objData2.code);
                 }
                 else {
-                    MyUtil.outputErrorInfo("clientApp.ts", "REGISTER", "" + objData2.code); ////这里不会执行，但是仍然保留.  
+                    MyUtil.outputErrorInfo("clientApp.ts", "onmessage-REGISTER ERROR", "\u6CE8\u518C\u5931\u8D25\u3002code:" + objData2.code);
                 }
             }
             else {
-                MyUtil.outputErrorInfo("clientApp.ts", "REGISTER", "" + objData2.code);
+                MyUtil.outputErrorInfo("clientApp.ts", "onmessage-REGISTER", "\u6CE8\u518C\u5931\u8D25\u3002code:" + objData2.code);
             }
         }
         else if (NetMessageID.MESSAGE_SUB_ID.LOGIN == objData1.msgSubID) {
             var objData2 = JSON.parse(objData1.msgData);
+            console.error("username:" + objData2.username + ",userid:" + objData2.userid + ",code:" + objData2.code + ",des:" + objData2.des);
             if (0 != Object.keys(objData2).length) {
                 if (NetMessageID.ERROR_CODE.IS_OK == objData2.code) {
-                    MyUtil.outputDebugInfo("clientApp.ts", "LOGIN", "" + objData2.code);
+                    MyUtil.outputDebugInfo("clientApp.ts", "onmessage-LOGIN", "\u767B\u9646\u6210\u529F\uFF0Ccode:" + objData2.code);
                 }
                 else {
-                    MyUtil.outputErrorInfo("clientApp.ts", "LOGIN", "" + objData2.code);
+                    MyUtil.outputErrorInfo("clientApp.ts", "onmessage-LOGIN ERROR", "\u767B\u9646\u5931\u8D25\uFF0Ccode:" + objData2.code);
                 }
             }
             else {
-                MyUtil.outputErrorInfo("clientApp.ts", "LOGIN", "" + objData2.code);
+                MyUtil.outputErrorInfo("clientApp.ts", "onmessage-LOGIN", "" + objData2.code);
             }
         }
         else if (NetMessageID.MESSAGE_SUB_ID.LOGOUT == objData1.msgSubID) {
             var objData2 = JSON.parse(objData1.msgData);
+            console.error("username:" + objData2.username + ",userid:" + objData2.userid + ",code:" + objData2.code + ",des:" + objData2.des);
             if (0 != Object.keys(objData2).length) {
                 if (NetMessageID.ERROR_CODE.IS_OK == objData2.code) {
-                    MyUtil.outputDebugInfo("clientApp.ts", "LOGOUT", "" + objData2.code);
+                    MyUtil.outputDebugInfo("clientApp.ts", "onmessage-LOGOUT", "" + objData2.code);
                 }
                 else {
-                    MyUtil.outputErrorInfo("clientApp.ts", "LOGOUT", "" + objData2.code);
+                    MyUtil.outputErrorInfo("clientApp.ts", "onmessage-LOGOUT ERROR", "" + objData2.code);
                 }
             }
             else {
-                MyUtil.outputErrorInfo("clientApp.ts", "LOGOUT", "" + objData2.code);
+                MyUtil.outputErrorInfo("clientApp.ts", "onmessage-LOGOUT", "" + objData2.code);
             }
         }
         else {
@@ -115,7 +134,8 @@ ws_cient.onmessage = function (event) {
         }
     }
     else {
-        MyUtil.outputWarnInfo("clientApp.ts", "unknown message", "messageMainID:" + objData1.msgMainID + ",messageSubID:" + objData1.msgSubID);
+        MyUtil.outputWarnInfo("clientApp.ts", "unknown message", "event.data");
+        console.error(event.data);
     }
 };
 // onclose: (event: WebSocket.CloseEvent) => void;
@@ -132,37 +152,21 @@ ws_cient.onclose = function (event) {
     console.log(event.reason);
     console.log(event.target);
 };
-function testRegister() {
+function testSayHello() {
     var tempSendMsg = {};
     tempSendMsg.msgTimeStamp = new Date();
     tempSendMsg.msgLength = 1;
     tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-    tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.REGISTER;
+    tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.SAY_HELLO;
+    //say hello message
     var tempDataSend = {};
-    tempDataSend.username = "henry01";
-    tempDataSend.password = "12345";
+    tempDataSend.username = "I am client";
+    tempDataSend.des = "Hello,server. I am client.";
     ////将用户自定义的json数据，从obj转为json字符串，然后打包发送出去
     tempSendMsg.msgData = JSON.stringify(tempDataSend);
-    //console.log(JSON.stringify(tempSendMsg))
     ///obj转为json字符串，发送给客户端
     ws_cient.send(JSON.stringify(tempSendMsg));
-    MyUtil.outputDebugInfo("clientApp.ts", "testRegister", "one client [Register]");
-}
-function testLogin() {
-    var tempSendMsg = {};
-    tempSendMsg.msgTimeStamp = new Date();
-    tempSendMsg.msgLength = 1;
-    tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-    tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.LOGIN;
-    var tempDataSend = {};
-    tempDataSend.username = "henry01";
-    tempDataSend.password = "12345";
-    ////将用户自定义的json数据，从obj转为json字符串，然后打包发送出去
-    tempSendMsg.msgData = JSON.stringify(tempDataSend);
-    //console.log(JSON.stringify(tempSendMsg))
-    ///obj转为json字符串，发送给客户端
-    ws_cient.send(JSON.stringify(tempSendMsg));
-    MyUtil.outputDebugInfo("clientApp.ts", "testLogin", "one client [Login]");
+    MyUtil.outputDebugInfo("clientApp.ts", "testSayHello", "" + JSON.stringify(tempSendMsg));
 }
 function testLogout() {
     var tempSendMsg = {};
@@ -170,30 +174,42 @@ function testLogout() {
     tempSendMsg.msgLength = 1;
     tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
     tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.LOGOUT;
+    //say hello message
     var tempDataSend = {};
-    tempDataSend.username = "henry01";
-    tempDataSend.password = "12345";
+    tempDataSend.username = OneUser.username;
+    tempDataSend.userid = 456789;
+    tempDataSend.des = "client quit.";
+    tempDataSend.code = 12345;
     ////将用户自定义的json数据，从obj转为json字符串，然后打包发送出去
     tempSendMsg.msgData = JSON.stringify(tempDataSend);
-    //console.log(JSON.stringify(tempSendMsg))
     ///obj转为json字符串，发送给客户端
     ws_cient.send(JSON.stringify(tempSendMsg));
-    MyUtil.outputDebugInfo("clientApp.ts", "testLogout", "one client [Logout]]");
+    MyUtil.outputDebugInfo("clientApp.ts", "testLogout", "" + JSON.stringify(tempSendMsg));
 }
 ////客户端定时向服务器发消息.
-var tempClock = 1;
-var interval = setInterval(function () {
+var tempClockA = 1;
+var tempClockB = 1;
+var intervalA = setInterval(function () {
     if (ws_cient.readyState == ws_cient.OPEN) {
         /////==============================模拟发送一条信息给服务器
-        //        testRegister();
-        testLogin();
-        //        testLogout();
-        console.log("[setInterval]-----check----[" + tempClock + "]");
-        tempClock++;
+        testLogout();
+        console.log("[setInterval]-----check----[" + tempClockA + "]");
+        tempClockA++;
     }
     else {
-        clearInterval(interval);
+        clearInterval(intervalA);
     }
-}, 3000);
+}, 10000);
+var intervalB = setInterval(function () {
+    if (ws_cient.readyState == ws_cient.OPEN) {
+        /////==============================模拟发送一条信息给服务器
+        testSayHello();
+        console.log("[setInterval]-----check----[" + tempClockB + "]");
+        tempClockB++;
+    }
+    else {
+        clearInterval(intervalB);
+    }
+}, 2000);
 MyUtil.outputDebugInfo("app.ts", "this is clientApp.", "---------------->>>>End");
 //# sourceMappingURL=clientApp.js.map
