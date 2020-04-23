@@ -94,6 +94,7 @@ var Users = /** @class */ (function () {
     /** 初始化Users类，并绑定消息路由 */
     Users.prototype.init = function () {
         this.ws.on('message', this.handleIncoming);
+        // this.ws.on('ping',(data)=>{console.log(data)});
     };
     /**处理 客户端断开连接 */
     Users.prototype.handleClose = function (code, reason) {

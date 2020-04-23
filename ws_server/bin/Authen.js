@@ -103,21 +103,25 @@ var Authen = /** @class */ (function () {
     ;
     /**服务器给客户端注册反馈*/
     Authen.registerRsp_s = function (thisServer, retVal) {
-        return new Promise(function (resolve, reject) {
-            MyUtil.outputDebugInfo("Authen", "registerRsp", " success.");
-            var tempSendMsg = {};
-            tempSendMsg.msgTimeStamp = new Date();
-            tempSendMsg.msgLength = 1;
-            tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
-            tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.REGISTER;
-            var tempDataSend2 = {};
-            tempDataSend2.code = retVal.code;
-            tempDataSend2.des = retVal.des;
-            tempDataSend2.userid = retVal.userid;
-            tempDataSend2.username = retVal.username;
-            tempSendMsg.msgData = JSON.stringify(tempDataSend2);
-            thisServer.send(JSON.stringify(tempSendMsg));
-            resolve("registerRsp_s success");
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        MyUtil.outputDebugInfo("Authen", "registerRsp", " success.");
+                        var tempSendMsg = {};
+                        tempSendMsg.msgTimeStamp = new Date();
+                        tempSendMsg.msgLength = 1;
+                        tempSendMsg.msgMainID = NetMessageID.MESSAGE_MAIN_ID.MAIN_ID_LOGIN_REGISTER;
+                        tempSendMsg.msgSubID = NetMessageID.MESSAGE_SUB_ID.REGISTER;
+                        var tempDataSend2 = {};
+                        tempDataSend2.code = retVal.code;
+                        tempDataSend2.des = retVal.des;
+                        tempDataSend2.userid = retVal.userid;
+                        tempDataSend2.username = retVal.username;
+                        tempSendMsg.msgData = JSON.stringify(tempDataSend2);
+                        thisServer.send(JSON.stringify(tempSendMsg));
+                        resolve("registerRsp_s success");
+                    })];
+            });
         });
     };
     ;

@@ -19,9 +19,9 @@ var listenPort = 3006; // origin
 //const ws_cient = new WebSocket(`ws://127.0.0.1:${listenPort}`);
 /**模拟一个客户端数据 */
 var OneUser = {
-    username: "henry09",
+    username: "henry1",
     password: "123456",
-    act: 2 //1：注册，2:登录，3：退出*/
+    act: 1 //1：注册，2:登录，3：退出*/
 };
 var url = "ws://127.0.0.1:3006/";
 var params = "?username=" + OneUser.username + "&password=" + OneUser.password + "&act=" + OneUser.act;
@@ -152,6 +152,7 @@ ws_cient.onclose = function (event) {
     console.log(event.reason);
     console.log(event.target);
 };
+/**测试消息。客户端和服务器互发一条测试消息 */
 function testSayHello() {
     var tempSendMsg = {};
     tempSendMsg.msgTimeStamp = new Date();
@@ -168,6 +169,7 @@ function testSayHello() {
     ws_cient.send(JSON.stringify(tempSendMsg));
     MyUtil.outputDebugInfo("clientApp.ts", "testSayHello", "" + JSON.stringify(tempSendMsg));
 }
+/**模拟玩家退出操作，目前是交给定时器处理 */
 function testLogout() {
     var tempSendMsg = {};
     tempSendMsg.msgTimeStamp = new Date();
@@ -186,30 +188,61 @@ function testLogout() {
     ws_cient.send(JSON.stringify(tempSendMsg));
     MyUtil.outputDebugInfo("clientApp.ts", "testLogout", "" + JSON.stringify(tempSendMsg));
 }
+function testAlotRegister() {
+    for (var i = 0; i < 100; i++) {
+        /**模拟一个客户端数据 */
+        var OneUser2 = {
+            username: "henryA",
+            password: "123456",
+            act: 1 //1：注册，2:登录，3：退出*/
+        };
+        OneUser2.username = OneUser2.username + i;
+        var params_2 = "?username=" + OneUser2.username + "&password=" + OneUser2.password + "&act=" + OneUser2.act;
+        var ws_cient_2 = new ws_1.default(url + params_2);
+    }
+}
 ////客户端定时向服务器发消息.
 var tempClockA = 1;
 var tempClockB = 1;
-var intervalA = setInterval(function () {
-    if (ws_cient.readyState == ws_cient.OPEN) {
-        /////==============================模拟发送一条信息给服务器
-        testLogout();
-        console.log("[setInterval]-----check----[" + tempClockA + "]");
-        tempClockA++;
-    }
-    else {
-        clearInterval(intervalA);
-    }
-}, 10000);
-var intervalB = setInterval(function () {
-    if (ws_cient.readyState == ws_cient.OPEN) {
-        /////==============================模拟发送一条信息给服务器
-        testSayHello();
-        console.log("[setInterval]-----check----[" + tempClockB + "]");
-        tempClockB++;
-    }
-    else {
-        clearInterval(intervalB);
-    }
+var tempColckC = 1;
+var tempColckD = 1;
+// const intervalA = setInterval(function () {
+//     if(ws_cient.readyState == ws_cient.OPEN)
+//     {
+//         /////==============================模拟发送一条信息给服务器
+//         testLogout();        
+//         console.log(`[setInterval]-----check----[${tempClockA}]`);    
+//         tempClockA++;
+//     }
+//     clearInterval(intervalA);
+// }, 15000);
+// /**测试和服务器互发消息 */
+// const intervalB = setInterval(function () {
+//     if(ws_cient.readyState == ws_cient.OPEN)
+//     {
+//     /////==============================模拟发送一条信息给服务器
+//         testSayHello(); 
+//         console.log(`[setInterval]-----check----[${tempClockB}]`);    
+//         tempClockB++;
+//     }
+//     else
+//     {
+//         clearInterval(intervalB);
+//     }
+// }, 2000);
+// /**发送 ping 心跳 */
+// const intervalC = setInterval(()=>{
+//     if(ws_cient.readyState == ws_cient.OPEN){
+//         ws_cient.ping("client is alive");
+//     }
+//     else {
+//         clearInterval(intervalC);
+//     }
+// },3000);
+/**定时执行 批量注册操作 */
+var intervalC = setInterval(function () {
+    testAlotRegister();
+    clearTimeout(intervalC);
 }, 2000);
 MyUtil.outputDebugInfo("app.ts", "this is clientApp.", "---------------->>>>End");
 //# sourceMappingURL=clientApp.js.map

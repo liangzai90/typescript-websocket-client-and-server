@@ -53,20 +53,6 @@ var MyUtil = __importStar(require("./Util"));
 var dbname = 'user_list_db';
 var table_register = 'user_register';
 var table_logout = 'user_logout';
-// /** 每个表，都需要定义一个表结构.（目前，登陆和注册都是同一个表来处理的）*/
-// let UserListSchema = new MongoClient.Schema({
-//     name:String,
-//     userid:Number,
-//     password:String,
-//     logTime: Date
-// });         
-// /** 每个表，都需要定义一个表结构 */
-// const LogoutSchema = new MongoClient.Schema({
-//     name:String,
-//     userid:Number,
-//     password:String,
-//     logTime: Date
-// });         
 /**定义MongoDBManager的单例，封装了对数据库的若干操作 */
 var MongoDBManager = /** @class */ (function () {
     function MongoDBManager(mongoInfo) {
@@ -102,6 +88,7 @@ var MongoDBManager = /** @class */ (function () {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         /**1.连接数据库服务器*/
                         mongodb_1.MongoClient.connect(MongoDBManager.mongoInfo.url, function (err, dbClient) {
+                            var _this = this;
                             //assert.equal(err, null);
                             if (err) {
                                 MyUtil.outputErrorInfo("MongoDBManager", "userRegister", "register error");
@@ -116,59 +103,48 @@ var MongoDBManager = /** @class */ (function () {
                             var UserDB = dbClient.db(dbname);
                             /**3.连接数据库的某个表*/
                             var registerCollection = UserDB.collection(table_register);
-                            var totalNum = 0;
-                            /**统计有都多少条数据*/
-                            registerCollection.find({}).toArray(function (err, doc) {
-                                if (err) {
-                                    MyUtil.outputErrorInfo("MongoDBManager", "userRegister", "find error");
-                                    console.error(err);
-                                    objReturn.code = NetMessageID.ERROR_CODE.REGISTER_FAILED;
-                                    objReturn.des = "注册失败，数据库异常，无法生存userid";
-                                    objReturn.userid = 0;
-                                    resolve(objReturn);
-                                    dbClient.close();
-                                    return;
-                                }
-                                totalNum = doc.length;
-                            });
+                            /** 要保存到数据库的 数据内容*/
+                            var oneUser = {};
+                            oneUser.username = regist.username;
+                            oneUser.userid = 0; /**生成的userid */
+                            oneUser.password = regist.password;
+                            oneUser.timestamp = new Date();
                             /**查找*/
                             var findObj = { username: regist.username };
-                            registerCollection.find(findObj).toArray(function (err, doc) {
-                                if (doc.length > 0) {
-                                    objReturn.code = NetMessageID.ERROR_CODE.REGISTER_FAILED;
-                                    objReturn.des = "注册失败，账号已存在";
-                                    resolve(objReturn);
-                                    dbClient.close();
-                                    return;
-                                }
-                                /** 要保存到数据库的 数据内容*/
-                                var oneUser = {};
-                                oneUser.username = regist.username;
-                                oneUser.userid = totalNum + 10000; /**生成的userid */
-                                oneUser.password = regist.password;
-                                oneUser.timestamp = new Date();
-                                /**把玩家userid字段赋值*/
-                                objReturn.userid = oneUser.userid;
-                                /**插入玩家的注册信息 */
-                                registerCollection.insertOne(oneUser, function (err, res) {
-                                    if (err) {
-                                        MyUtil.outputErrorInfo("MongoDBManager", "userRegister", "insert error");
-                                        console.error(err);
-                                        objReturn.code = NetMessageID.ERROR_CODE.REGISTER_FAILED;
-                                        objReturn.des = "注册失败，保存数据库失败，未知错误";
-                                        objReturn.userid = 0;
-                                        resolve(objReturn);
-                                        dbClient.close();
-                                        return;
+                            (function () { return __awaiter(_this, void 0, void 0, function () {
+                                var retFind, retRecord, retInsert;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, registerCollection.find(findObj).toArray()];
+                                        case 1:
+                                            retFind = _a.sent();
+                                            console.error(retFind);
+                                            if (retFind.length > 0) {
+                                                objReturn.code = NetMessageID.ERROR_CODE.REGISTER_FAILED;
+                                                objReturn.des = "注册失败，账号已存在";
+                                                resolve(objReturn);
+                                                dbClient.close();
+                                                return [2 /*return*/];
+                                            }
+                                            return [4 /*yield*/, registerCollection.findOneAndUpdate({ increase: 1 }, { $inc: { userid: 1 }, $set: { des: "This line record total num" } }, { "upsert": true, "returnOriginal": false })];
+                                        case 2:
+                                            retRecord = _a.sent();
+                                            /**取出了递增的id值，把玩家userid字段赋值*/
+                                            oneUser.userid = MongoDBManager.g_BaseUserID + retRecord.value.userid;
+                                            return [4 /*yield*/, registerCollection.insertOne(oneUser)];
+                                        case 3:
+                                            retInsert = _a.sent();
+                                            /**如果一切正常，会走到这里.把userid值放入返回值，传递出去 */
+                                            objReturn.userid = oneUser.userid;
+                                            objReturn.code = NetMessageID.ERROR_CODE.IS_OK;
+                                            objReturn.des = "注册成功";
+                                            MyUtil.outputErrorInfo("MongoDBManager.ts", "userRegister", "\u65B0\u73A9\u5BB6[" + regist.username + "]\u6CE8\u518C\u6210\u529F,userid:" + objReturn.userid);
+                                            resolve(objReturn);
+                                            dbClient.close();
+                                            return [2 /*return*/];
                                     }
                                 });
-                                /**如果一切正常，会走到这里 */
-                                objReturn.code = NetMessageID.ERROR_CODE.IS_OK;
-                                objReturn.des = "注册成功";
-                                MyUtil.outputErrorInfo("MongoDBManager.ts", "userRegister", "\u65B0\u73A9\u5BB6[" + regist.username + "]\u6CE8\u518C\u6210\u529F,userid:" + objReturn.userid);
-                                resolve(objReturn);
-                                dbClient.close();
-                            });
+                            }); })().catch(function (error) { console.error(error); });
                         });
                     })];
             });
@@ -187,6 +163,7 @@ var MongoDBManager = /** @class */ (function () {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         /**1.连接数据库服务器*/
                         mongodb_1.MongoClient.connect(MongoDBManager.mongoInfo.url, function (err, dbClient) {
+                            var _this = this;
                             //assert.equal(err, null);
                             if (err) {
                                 MyUtil.outputErrorInfo("MongoDBManager", "userLogin", "login error");
@@ -203,30 +180,39 @@ var MongoDBManager = /** @class */ (function () {
                             var registerCollection = UserDB.collection(table_register);
                             /**查找*/
                             var findObj = { username: login.username };
-                            registerCollection.find(findObj).toArray(function (err, doc) {
-                                if (doc.length > 0) {
-                                    if (doc[0].password.match(login.password)) {
-                                        objReturn.code = NetMessageID.ERROR_CODE.IS_OK;
-                                        objReturn.des = "登陆成功";
-                                        objReturn.userid = doc[0].userid;
-                                        resolve(objReturn);
-                                        dbClient.close();
-                                        MyUtil.outputErrorInfo("MongoDBManager.ts", "userLogin", "\u73A9\u5BB6[" + login.username + "]\u767B\u9646\u6210\u529F,userid[" + objReturn.userid + "]");
+                            (function () { return __awaiter(_this, void 0, void 0, function () {
+                                var retFind;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, registerCollection.find(findObj).toArray()];
+                                        case 1:
+                                            retFind = _a.sent();
+                                            if (retFind.length > 0) {
+                                                if (retFind[0].password.match(login.password)) {
+                                                    objReturn.code = NetMessageID.ERROR_CODE.IS_OK;
+                                                    objReturn.des = "登陆成功";
+                                                    objReturn.userid = retFind[0].userid;
+                                                    resolve(objReturn);
+                                                    dbClient.close();
+                                                    MyUtil.outputErrorInfo("MongoDBManager.ts", "userLogin", "\u73A9\u5BB6[" + login.username + "]\u767B\u9646\u6210\u529F,userid[" + objReturn.userid + "]");
+                                                }
+                                                else {
+                                                    objReturn.code = NetMessageID.ERROR_CODE.LOGIN_FAILED;
+                                                    objReturn.des = "登陆失败，密码错误";
+                                                    resolve(objReturn);
+                                                    dbClient.close();
+                                                }
+                                            }
+                                            else {
+                                                objReturn.code = NetMessageID.ERROR_CODE.LOGIN_FAILED;
+                                                objReturn.des = "登陆失败，玩家信息不存在";
+                                                resolve(objReturn);
+                                                dbClient.close();
+                                            }
+                                            return [2 /*return*/];
                                     }
-                                    else {
-                                        objReturn.code = NetMessageID.ERROR_CODE.LOGIN_FAILED;
-                                        objReturn.des = "登陆失败，密码错误";
-                                        resolve(objReturn);
-                                        dbClient.close();
-                                    }
-                                }
-                                else {
-                                    objReturn.code = NetMessageID.ERROR_CODE.LOGIN_FAILED;
-                                    objReturn.des = "登陆失败，玩家信息不存在";
-                                    resolve(objReturn);
-                                    dbClient.close();
-                                }
-                            });
+                                });
+                            }); })().catch(function (error) { console.error(error); });
                         });
                     }).catch(function (error) { return console.error(error); })]; //如果查找失败，状态可能会卡在这，需要catch error;
             });
@@ -289,6 +275,8 @@ var MongoDBManager = /** @class */ (function () {
     ;
     /**存放MongoDB的若干连接信息，url, dbName */
     MongoDBManager.mongoInfo = {};
+    /**最低的userid值，新玩家的userid都是在这个值后面递增 */
+    MongoDBManager.g_BaseUserID = 10000;
     return MongoDBManager;
 }());
 exports.MongoDBManager = MongoDBManager;

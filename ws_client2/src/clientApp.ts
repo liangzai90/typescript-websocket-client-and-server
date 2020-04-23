@@ -13,9 +13,9 @@ const listenPort = 3006; // origin
 
 /**模拟一个客户端数据 */
 var OneUser = {
-    username :"henry10",
+    username :"henry09",
     password:"123456",
-    act:2 //1：注册，2:登录，3：退出*/
+    act:1 //1：注册，2:登录，3：退出*/
 }
 
 

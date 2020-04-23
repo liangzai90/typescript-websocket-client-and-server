@@ -70,7 +70,7 @@ export class Authen{
     
 
     /**服务器给客户端注册反馈*/
-    static registerRsp_s(thisServer:WebSocket,retVal:NetMessageType.MSG_S2C_RSP_1){
+    static async registerRsp_s(thisServer:WebSocket,retVal:NetMessageType.MSG_S2C_RSP_1){
         return new Promise((resolve, reject)=>{
             MyUtil.outputDebugInfo("Authen", "registerRsp"," success.");
             let tempSendMsg = <NetMessageType.MSG_TYPE>{};

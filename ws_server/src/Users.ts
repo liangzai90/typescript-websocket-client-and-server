@@ -34,6 +34,7 @@ export class  Users{
     /** 初始化Users类，并绑定消息路由 */
     init() {
          this.ws.on('message', this.handleIncoming);       
+        // this.ws.on('ping',(data)=>{console.log(data)});
     }
 
 

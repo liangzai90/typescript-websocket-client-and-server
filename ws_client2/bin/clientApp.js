@@ -19,9 +19,9 @@ var listenPort = 3006; // origin
 //const ws_cient = new WebSocket(`ws://127.0.0.1:${listenPort}`);
 /**模拟一个客户端数据 */
 var OneUser = {
-    username: "henry10",
+    username: "henry09",
     password: "123456",
-    act: 2 //1：注册，2:登录，3：退出*/
+    act: 1 //1：注册，2:登录，3：退出*/
 };
 var url = "ws://127.0.0.1:3006/";
 var params = "?username=" + OneUser.username + "&password=" + OneUser.password + "&act=" + OneUser.act;
