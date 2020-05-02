@@ -62,15 +62,15 @@ https://typescript.bootcss.com/tsconfig-json.html
 - > [Terminal]-->[Run Task],选择 watch 
   
 
-win10 脚本被禁用问题：
 
 ------------------------------------------------
 
-set-ExecutionPolicy RemoteSigned  
+### win10 脚本被禁用问题：
+------------------------------------------------
 
-在power shell输入这个命令。
-
-参考地址：https://blog.csdn.net/wqnmlgbsz/article/details/100654258
+    set-ExecutionPolicy RemoteSigned  
+    在power shell输入这个命令。
+    参考地址：https://blog.csdn.net/wqnmlgbsz/article/details/100654258
 
 
 
