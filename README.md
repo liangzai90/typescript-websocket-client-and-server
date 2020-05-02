@@ -24,7 +24,9 @@ https://typescript.bootcss.com/tsconfig-json.html
 
 
 1.typescript开发的准备工作：
+
 ---------------------------------------
+
 - > npm i -g typescript
 - > npm i -g nodemon
 - > npm install typings --global
@@ -40,20 +42,30 @@ https://typescript.bootcss.com/tsconfig-json.html
 
 
 ===============================
+
 1.初始tsc环境，生成tsconfig.json文件
+
 - >   tsc  --init 
+
 2.初始化 npm环境，生成package.json文件
+
 - >   npm init -y
+
 3.vs打开当前目录
+
 - >   code . 
+
 4.写完ts文件之后，记得build（构建）一下
 
 5.打开watch功能
+
 - > [Terminal]-->[Run Task],选择 watch 
   
 
 win10 脚本被禁用问题：
+
 ------------------------------------------------
+
 set-ExecutionPolicy RemoteSigned  
 
 在power shell输入这个命令。
@@ -64,6 +76,7 @@ set-ExecutionPolicy RemoteSigned
 
 
 
+### 命令总结
 
 - > npm i -g typescript
 - > npm install typings --global
@@ -80,7 +93,7 @@ set-ExecutionPolicy RemoteSigned
 - > npm install -s @types/express 
 - > npm install -s @types/express-ws  
 - > npm install -s @types/mongoose
-
-
- 
+- > tsc  --init 
+- > npm init -y
+- > code . 
  
